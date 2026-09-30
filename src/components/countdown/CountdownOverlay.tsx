@@ -7,6 +7,7 @@ import { useI18n } from "@/contexts/I18nContext";
 export function CountdownOverlay() {
 	const { t } = useI18n();
 	const [countdown, setCountdown] = useState<number | null>(null);
+	const [platform, setPlatform] = useState<string | null>(null);
 
 	useEffect(() => {
 		void window.electronAPI.getActiveCountdown().then((result) => {
@@ -21,6 +22,12 @@ export function CountdownOverlay() {
 
 		return cleanup;
 	}, []);
+
+	useEffect(() => {
+		void window.electronAPI.getPlatform().then(setPlatform);
+	}, []);
+
+	const stopShortcut = platform === "darwin" ? "⌘+Space" : "Ctrl+Space";
 
 	const handleCancel = useCallback(() => {
 		window.electronAPI.cancelCountdown();
@@ -47,6 +54,9 @@ export function CountdownOverlay() {
 	return (
 		<div className="fixed inset-0 flex items-center justify-center" onClick={handleCancel}>
 			<Card className="size-44 items-center justify-center gap-1" aria-live="assertive">
+				<span className="text-[10px] text-muted-foreground">
+					{t("launch.recording.stopShortcutLine", undefined, { shortcut: stopShortcut })}
+				</span>
 				<span className="text-7xl tabular-nums">{countdown}</span>
 				<Button
 					variant="ghost"

@@ -42,7 +42,7 @@
 		"resume": "Возобновить",
 		"pause": "Пауза",
 		"stop": "Стоп",
-		"stopShortcutHint": "Остановить запись ({{shortcut}})",
+		"stopShortcutLine": "{{shortcut}} — завершить",
 		"cancel": "Отмена",
 		"more": "Ещё",
 		"update": {

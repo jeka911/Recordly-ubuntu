@@ -42,7 +42,7 @@
 		"resume": "Reprendre",
 		"pause": "Pause",
 		"stop": "Arrêter",
-		"stopShortcutHint": "Arrêter l'enregistrement ({{shortcut}})",
+		"stopShortcutLine": "{{shortcut}} pour terminer",
 		"cancel": "Annuler",
 		"more": "Plus",
 		"update": {

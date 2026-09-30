@@ -42,7 +42,7 @@
 		"resume": "恢复",
 		"pause": "暂停",
 		"stop": "停止",
-		"stopShortcutHint": "停止录制（{{shortcut}}）",
+		"stopShortcutLine": "{{shortcut}} 结束",
 		"cancel": "取消",
 		"more": "更多",
 		"update": {
