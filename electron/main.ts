@@ -8,6 +8,7 @@ import {
 	desktopCapturer,
 	dialog,
 	webContents as electronWebContents,
+	globalShortcut,
 	ipcMain,
 	Menu,
 	nativeImage,
@@ -872,6 +873,7 @@ function createSourceSelectorWindowWrapper() {
 // explicitly with Cmd + Q.
 app.on("before-quit", () => {
 	isAppQuitting = true;
+	globalShortcut.unregisterAll();
 	authCallbacks.close();
 	void clearRecordingTrashUndo().catch((error) =>
 		console.warn("Could not clear recording undo cache", error),
@@ -1004,6 +1006,15 @@ app.whenReady().then(async () => {
 		updateTrayMenu();
 	}
 	setupApplicationMenu();
+
+	// Global shortcut to stop an active recording without needing the tray menu
+	// or the HUD's stop button (e.g. while the HUD is minimized/hidden).
+	// Reuses the same channel the tray's "Stop Recording" menu item sends.
+	globalShortcut.register("CommandOrControl+Space", () => {
+		if (mainWindow && !mainWindow.isDestroyed()) {
+			mainWindow.webContents.send("stop-recording-from-tray");
+		}
+	});
 	await Promise.all([
 		ensureRecordingsDir(),
 		!VITE_DEV_SERVER_URL

@@ -417,9 +417,20 @@ ipcMain.on("hud-overlay-drag", (_event, phase: string, screenX: number, screenY:
 });
 
 ipcMain.on("hud-overlay-hide", () => {
-	if (hudOverlayWindow && !hudOverlayWindow.isDestroyed()) {
-		hudOverlayWindow.minimize();
+	if (!hudOverlayWindow || hudOverlayWindow.isDestroyed()) {
+		return;
 	}
+	if (process.platform === "linux") {
+		// The HUD is skipTaskbar + non-focusable on Linux, so it has no taskbar
+		// entry or window-manager affordance to restore a minimized window from.
+		// Many X11 window managers also just ignore minimize requests for
+		// windows shaped like this. Hide it instead; the tray icon's "show HUD"
+		// action already un-hides via show()/moveTop() regardless of minimized
+		// state, so this restores the same way minimize would have.
+		hudOverlayWindow.hide();
+		return;
+	}
+	hudOverlayWindow.minimize();
 });
 
 ipcMain.handle("get-hud-overlay-capture-protection", () => {
@@ -514,6 +525,16 @@ export function createHudOverlayWindow(): BrowserWindow {
 			backgroundThrottling: false,
 		},
 	});
+	// Forward renderer console output to the main process's stdout/stderr so
+	// errors (e.g. the real DOMException behind a failed recording start) are
+	// visible in the terminal even when DevTools can't be opened.
+	win.webContents.on("console-message", (event) => {
+		const logger = event.level === "error" ? console.error : console.log;
+		logger(
+			`[hud-renderer:${event.level}] ${event.message} (${event.sourceId}:${event.lineNumber})`,
+		);
+	});
+
 	// Keep the recording controls and webcam above normal and full-screen apps.
 	// Transparent regions remain click-through via setIgnoreMouseEvents().
 	win.setAlwaysOnTop(true, "screen-saver");
@@ -597,6 +618,11 @@ export function createHudOverlayWindow(): BrowserWindow {
 	win.webContents.on("did-finish-load", () => {
 		console.log(`[PERF:MAIN] HUD Window: did-finish-load in ${Date.now() - perfStart}ms`);
 		win?.webContents.send("main-process-message", new Date().toLocaleString());
+		// Temporary diagnostic ping to confirm renderer console forwarding
+		// reaches this process's stdout.
+		win?.webContents
+			.executeJavaScript("console.log('[recordly-debug] hud renderer console forwarding check')")
+			.catch((error) => console.error("[recordly-debug] executeJavaScript failed:", error));
 		// Safety fallback if renderer-ready signal never arrives.
 		setTimeout(() => {
 			showHudWindow();

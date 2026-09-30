@@ -380,6 +380,8 @@ export class ModernVideoExporter {
 	async export(): Promise<ExportResult> {
 		let useFallbackMediaSource = false;
 		let retriedWithFallbackMediaSource = false;
+		let retriedWithWebglBackend = false;
+		let forcedRenderBackend: ExportRenderBackend | undefined;
 		let nativeFailure: string | null = null;
 		this.mediaSourceRetryAttempted = false;
 		this.runtimeDiagnostics = await this.collectRuntimeDiagnostics();
@@ -604,7 +606,7 @@ export class ModernVideoExporter {
 					timelineEffects: this.config.clipRegions !== undefined,
 					width: this.config.width,
 					height: this.config.height,
-					preferredRenderBackend: undefined,
+					preferredRenderBackend: forcedRenderBackend,
 					wallpaper: this.config.wallpaper,
 					zoomRegions: this.config.zoomRegions,
 					showShadow: this.config.showShadow,
@@ -927,6 +929,21 @@ export class ModernVideoExporter {
 					retryExport = true;
 					console.warn(
 						"[VideoExporter] Primary decode path failed; retrying export once with a fresh media source.",
+						error,
+					);
+				} else if (
+					!this.cancelled &&
+					!retriedWithWebglBackend &&
+					this.renderBackend === "webgpu"
+				) {
+					// A WebGPU render/bind-group failure after successful init (e.g. a
+					// resource mismatch in a filter's shader pipeline) isn't recoverable
+					// mid-export, but a fresh attempt forced onto WebGL usually works.
+					retriedWithWebglBackend = true;
+					forcedRenderBackend = "webgl";
+					retryExport = true;
+					console.warn(
+						"[VideoExporter] WebGPU rendering failed; retrying export once with the WebGL backend.",
 						error,
 					);
 				} else {

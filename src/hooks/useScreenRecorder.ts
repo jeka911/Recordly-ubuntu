@@ -27,6 +27,9 @@ const CODEC_ALIGNMENT = 2;
 const RECORDER_TIMESLICE_MS = 250;
 const BITS_PER_MEGABIT = 1_000_000;
 const MIN_FRAME_RATE = 30;
+const RELAXED_MAX_FRAME_RATE = 30;
+const RELAXED_MAX_WIDTH = 1920;
+const RELAXED_MAX_HEIGHT = 1080;
 const CHROME_MEDIA_SOURCE = "desktop";
 const RECORDING_FILE_PREFIX = "recording-";
 const AUDIO_BITRATE_VOICE = 128_000;
@@ -1129,8 +1132,30 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		const platform = await window.electronAPI.getPlatform();
 		hideEditorOverlayCursorByDefault.current = false;
 		const existingSource = await window.electronAPI.getSelectedSource();
-		const selectedSource =
-			existingSource ?? (platform === "linux" ? LINUX_PORTAL_SOURCE : null);
+		let selectedSource: ProcessedDesktopSource | null = existingSource ?? null;
+		if (!selectedSource && platform === "linux") {
+			// Don't assume the Wayland portal sentinel for every Linux session:
+			// on X11, desktopCapturer can enumerate real screen sources directly,
+			// and forcing the portal/getDisplayMedia path there can fail with
+			// NotReadableError if the system's xdg-desktop-portal ScreenCast
+			// backend doesn't support it. Ask getSources (which already applies
+			// the correct Wayland-vs-X11 fallback) and only use the sentinel if
+			// it comes back as the answer.
+			try {
+				const linuxScreenSources = await window.electronAPI.getSources({
+					types: ["screen"],
+					thumbnailSize: { width: 1, height: 1 },
+					fetchWindowIcons: false,
+				});
+				selectedSource = linuxScreenSources[0] ?? LINUX_PORTAL_SOURCE;
+			} catch (error) {
+				console.warn(
+					"Failed to enumerate Linux screen sources, falling back to the portal sentinel:",
+					error,
+				);
+				selectedSource = LINUX_PORTAL_SOURCE;
+			}
+		}
 		if (!selectedSource) {
 			alert("Please select a source to record");
 			return null;
@@ -1957,17 +1982,62 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			let systemAudioIncluded = false;
 			const mediaDevices = navigator.mediaDevices as DesktopCaptureMediaDevices;
 			const useLinuxPortal = selectedSource.id === "screen:linux-portal";
-			const browserScreenVideoConstraints = {
-				mandatory: {
+			const buildBrowserScreenVideoConstraints = (relaxed: boolean) => {
+				const mandatory: Record<string, unknown> = {
 					chromeMediaSource: CHROME_MEDIA_SOURCE,
 					chromeMediaSourceId: browserCaptureSource.id,
-					maxWidth: TARGET_WIDTH,
-					maxHeight: TARGET_HEIGHT,
-					maxFrameRate: TARGET_FRAME_RATE,
-					minFrameRate: MIN_FRAME_RATE,
+					maxWidth: relaxed ? RELAXED_MAX_WIDTH : TARGET_WIDTH,
+					maxHeight: relaxed ? RELAXED_MAX_HEIGHT : TARGET_HEIGHT,
+					maxFrameRate: relaxed ? RELAXED_MAX_FRAME_RATE : TARGET_FRAME_RATE,
 					googCaptureCursor: browserCursorPolicy.streamCursor === "always",
-				},
-				cursor: browserCursorPolicy.streamCursor,
+				};
+				// A mandatory minFrameRate can make Chromium's desktop capturer fail to
+				// start (NotReadableError) when software-rendering (e.g. no GPU accel on
+				// Linux), so it's only requested on the initial, non-relaxed attempt.
+				if (!relaxed) {
+					mandatory.minFrameRate = MIN_FRAME_RATE;
+				}
+				return { mandatory, cursor: browserCursorPolicy.streamCursor };
+			};
+			const isNotReadableError = (error: unknown) =>
+				error instanceof DOMException && error.name === "NotReadableError";
+			const getUserMediaWithRelaxedFallback = async (
+				buildConstraints: (relaxed: boolean) => unknown,
+			) => {
+				console.log(
+					"[recording] requesting desktop capture",
+					JSON.stringify({
+						sourceId: browserCaptureSource.id,
+						useLinuxPortal,
+						platform: navigator.platform,
+					}),
+				);
+				try {
+					return await mediaDevices.getUserMedia(buildConstraints(false));
+				} catch (error) {
+					const name = error instanceof DOMException ? error.name : typeof error;
+					console.warn(
+						`[recording] desktop capture failed with default constraints (${name}): ${
+							error instanceof Error ? error.message : String(error)
+						}`,
+					);
+					if (!isNotReadableError(error)) {
+						throw error;
+					}
+					console.log("[recording] retrying desktop capture with relaxed constraints");
+					try {
+						return await mediaDevices.getUserMedia(buildConstraints(true));
+					} catch (relaxedError) {
+						const relaxedName =
+							relaxedError instanceof DOMException ? relaxedError.name : typeof relaxedError;
+						console.warn(
+							`[recording] desktop capture failed with relaxed constraints too (${relaxedName}): ${
+								relaxedError instanceof Error ? relaxedError.message : String(relaxedError)
+							}`,
+						);
+						throw relaxedError;
+					}
+				}
 			};
 
 			if (wantsAudioCapture) {
@@ -1990,15 +2060,15 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 					try {
 						screenMediaStream = useLinuxPortal
 							? await acquireLinuxPortalStream(true)
-							: await mediaDevices.getUserMedia({
+							: await getUserMediaWithRelaxedFallback((relaxed) => ({
 									audio: {
 										mandatory: {
 											chromeMediaSource: CHROME_MEDIA_SOURCE,
 											chromeMediaSourceId: browserCaptureSource.id,
 										},
 									},
-									video: browserScreenVideoConstraints,
-								});
+									video: buildBrowserScreenVideoConstraints(relaxed),
+								}));
 					} catch (audioError) {
 						console.warn(
 							"System audio capture failed, falling back to video-only:",
@@ -2009,18 +2079,18 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 						);
 						screenMediaStream = useLinuxPortal
 							? await acquireLinuxPortalStream(false)
-							: await mediaDevices.getUserMedia({
+							: await getUserMediaWithRelaxedFallback((relaxed) => ({
 									audio: false,
-									video: browserScreenVideoConstraints,
-								});
+									video: buildBrowserScreenVideoConstraints(relaxed),
+								}));
 					}
 				} else {
 					screenMediaStream = useLinuxPortal
 						? await acquireLinuxPortalStream(false)
-						: await mediaDevices.getUserMedia({
+						: await getUserMediaWithRelaxedFallback((relaxed) => ({
 								audio: false,
-								video: browserScreenVideoConstraints,
-							});
+								video: buildBrowserScreenVideoConstraints(relaxed),
+							}));
 				}
 
 				screenStream.current = screenMediaStream;
@@ -2096,10 +2166,10 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 							selfBrowserSurface: "exclude",
 							surfaceSwitching: "exclude",
 						})
-					: await mediaDevices.getUserMedia({
+					: await getUserMediaWithRelaxedFallback((relaxed) => ({
 							audio: false,
-							video: browserScreenVideoConstraints,
-						});
+							video: buildBrowserScreenVideoConstraints(relaxed),
+						}));
 
 				stream.current = mediaStream;
 				videoTrack = mediaStream.getVideoTracks()[0];
@@ -2257,7 +2327,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			console.error("Failed to start recording:", error);
 			alert(
 				error instanceof Error
-					? `Failed to start recording: ${error.message}`
+					? `Failed to start recording: ${error.name ? `${error.name}: ` : ""}${error.message}`
 					: "Failed to start recording",
 			);
 			setRecording(false);

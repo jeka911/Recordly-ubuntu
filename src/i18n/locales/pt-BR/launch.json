@@ -42,6 +42,7 @@
 		"resume": "Retomar",
 		"pause": "Pausar",
 		"stop": "Parar",
+		"stopShortcutHint": "Parar gravação ({{shortcut}})",
 		"cancel": "Cancelar",
 		"more": "Mais",
 		"update": {

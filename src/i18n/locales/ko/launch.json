@@ -42,6 +42,7 @@
 		"resume": "계속",
 		"pause": "일시 정지",
 		"stop": "중지",
+		"stopShortcutHint": "녹화 중지 ({{shortcut}})",
 		"cancel": "취소",
 		"more": "더 보기",
 		"update": {

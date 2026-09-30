@@ -42,6 +42,7 @@
 		"resume": "Resume",
 		"pause": "Pause",
 		"stop": "Stop",
+		"stopShortcutHint": "Stop recording ({{shortcut}})",
 		"cancel": "Cancel",
 		"more": "More",
 		"update": {

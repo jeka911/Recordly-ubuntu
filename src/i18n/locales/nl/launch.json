@@ -42,6 +42,7 @@
 		"resume": "Hervatten",
 		"pause": "Pauzeren",
 		"stop": "Stoppen",
+		"stopShortcutHint": "Opname stoppen ({{shortcut}})",
 		"cancel": "Annuleren",
 		"more": "Meer",
 		"update": {

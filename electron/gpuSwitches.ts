@@ -42,7 +42,7 @@ export function shouldForceLinuxEgl(env: NodeJS.ProcessEnv): boolean {
 
 export function getGpuSwitches(
 	platform: NodeJS.Platform,
-	env: NodeJS.ProcessEnv = process.env,
+	_env: NodeJS.ProcessEnv = process.env,
 ): GpuSwitches {
 	if (platform === "darwin") {
 		return {
@@ -56,8 +56,15 @@ export function getGpuSwitches(
 	}
 
 	if (platform === "linux") {
+		// Forcing a specific GL backend (raw EGL, or EGL via ANGLE) on X11 has
+		// proven unreliable across drivers: some builds reject the legacy EGL
+		// implementation outright ("Requested GL implementation ... not found"),
+		// others fail to find a usable EGL config at all ("No suitable EGL
+		// configs found"), and either failure crashes the GPU process and
+		// breaks desktop capture. Let Chromium pick its own default/fallback
+		// GL backend instead. VAAPI stays disabled since many distros ship
+		// drivers that crash on "vaInitialize failed".
 		return {
-			useGl: shouldForceLinuxEgl(env) ? "egl" : undefined,
 			disableFeatures: ["VaapiVideoDecoder", "VaapiVideoEncoder"],
 		};
 	}

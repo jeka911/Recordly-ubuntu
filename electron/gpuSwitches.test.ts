@@ -46,21 +46,19 @@ describe("shouldForceLinuxEgl", () => {
 });
 
 describe("getGpuSwitches", () => {
-	it("returns the Linux VAAPI workaround without forcing EGL on Wayland", () => {
+	it("returns the Linux VAAPI workaround without forcing a GL backend on Wayland", () => {
 		expect(
 			getGpuSwitches("linux", {
 				XDG_SESSION_TYPE: "wayland",
 				WAYLAND_DISPLAY: "wayland-0",
 			}),
 		).toEqual({
-			useGl: undefined,
 			disableFeatures: ["VaapiVideoDecoder", "VaapiVideoEncoder"],
 		});
 	});
 
-	it("returns the X11 EGL workaround on Linux X11", () => {
+	it("returns the Linux VAAPI workaround without forcing a GL backend on X11", () => {
 		expect(getGpuSwitches("linux", { XDG_SESSION_TYPE: "x11" })).toEqual({
-			useGl: "egl",
 			disableFeatures: ["VaapiVideoDecoder", "VaapiVideoEncoder"],
 		});
 	});

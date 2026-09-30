@@ -214,6 +214,7 @@ function LaunchWindowContent() {
 			onHideHud={() => window.electronAPI?.hudOverlayHide?.()}
 			onCancelRecording={cancelRecording}
 			formatTime={formatTime}
+			platform={platform}
 		/>
 	);
 

@@ -21,6 +21,7 @@ interface RecordingControlsProps {
 	onHideHud: () => void;
 	onCancelRecording: () => void;
 	formatTime: (seconds: number) => string;
+	platform: string | null;
 }
 export function RecordingControls({
 	onHome,
@@ -32,8 +33,10 @@ export function RecordingControls({
 	onHideHud,
 	onCancelRecording,
 	formatTime,
+	platform,
 }: RecordingControlsProps) {
 	const t = useScopedT("launch");
+	const stopShortcut = platform === "darwin" ? "⌘+Space" : "Ctrl+Space";
 	const actionClass = `size-9 min-w-9 rounded-full ${styles.electronNoDrag}`;
 	return (
 		<div role="group" aria-label="Recording controls" className="flex items-center gap-2">
@@ -54,9 +57,14 @@ export function RecordingControls({
 				<span
 					className={`size-2 rounded-full ${paused ? "bg-warning" : `bg-danger ${styles.recDotBlink}`}`}
 				/>
-				<span className="min-w-14 text-sm font-medium tabular-nums text-foreground">
-					{formatTime(elapsed)}
-				</span>
+				<Tooltip>
+					<span className="min-w-14 text-sm font-medium tabular-nums text-foreground">
+						{formatTime(elapsed)}
+					</span>
+					<Tooltip.Content>
+						{t("recording.stopShortcutHint", undefined, { shortcut: stopShortcut })}
+					</Tooltip.Content>
+				</Tooltip>
 				{paused && (
 					<span className="text-xs text-muted-foreground">{t("recording.paused")}</span>
 				)}
