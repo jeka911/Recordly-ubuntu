@@ -24,7 +24,14 @@ function context() {
 		starts,
 		ctx: {
 			destination: {},
-			createGain: () => ({ gain: { value: 1 }, connect: vi.fn() }),
+			createGain: () => ({
+				gain: {
+					value: 1,
+					setValueAtTime: vi.fn(),
+					linearRampToValueAtTime: vi.fn(),
+				},
+				connect: vi.fn(),
+			}),
 			createBufferSource: () => {
 				const start = vi.fn();
 				starts.push(start);

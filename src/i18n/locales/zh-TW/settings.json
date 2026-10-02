@@ -247,6 +247,8 @@
 		"volumeTitle": "音訊",
 		"volume": "音量",
 		"normalize": "正規化",
+		"fadeIn": "淡入",
+		"fadeOut": "淡出",
 		"sourceTracksTitle": "剪輯源音訊",
 		"systemLabel": "系統源",
 		"micLabel": "麥克風源",

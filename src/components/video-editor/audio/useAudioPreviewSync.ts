@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buildResolvedAudioPlan } from "@/lib/exporter/audioRoutingEngine";
+import { buildResolvedAudioPlan, computeAudioFadeMultiplier } from "@/lib/exporter/audioRoutingEngine";
 import { resolveMediaElementSource } from "@/lib/exporter/localMediaSource";
 import {
 	clampMediaTimeToDuration,
@@ -347,6 +347,13 @@ export function useAudioPreviewSync({
 			const startMs = track.timelineBinding.startMs;
 			const endMs = track.timelineBinding.endMs;
 			const isInRegion = currentTimeMs >= startMs && currentTimeMs < endMs;
+			const fadeMultiplier = computeAudioFadeMultiplier(
+				currentTimeMs - startMs,
+				endMs - startMs,
+				track.fadeInMs,
+				track.fadeOutMs,
+			);
+			audio.volume = Math.max(0, Math.min(1, track.gain * previewVolume * fadeMultiplier));
 
 			if (isPlaying && isInRegion) {
 				enablePitchPreservingPlayback(audio);
@@ -369,7 +376,7 @@ export function useAudioPreviewSync({
 				audio.pause();
 			}
 		}
-	}, [isPlaying, resolvedUserTracks, timelineTime]);
+	}, [isPlaying, previewVolume, resolvedUserTracks, timelineTime]);
 
 	useEffect(() => {
 		if (resolvedSourceTracks.length === 0) {

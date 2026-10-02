@@ -667,6 +667,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 					const startMs = Math.max(0, Math.min(rawStart, rawEnd));
 					const endMs = Math.max(startMs + 1, rawEnd);
 
+					const durationMs = Math.max(0, endMs - startMs);
 					return {
 						id: region.id,
 						startMs,
@@ -676,6 +677,12 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 						normalize: Boolean(region.normalize),
 						trackIndex: isFiniteNumber(region.trackIndex)
 							? Math.max(0, Math.floor(region.trackIndex))
+							: 0,
+						fadeInMs: isFiniteNumber(region.fadeInMs)
+							? clamp(region.fadeInMs, 0, durationMs)
+							: 0,
+						fadeOutMs: isFiniteNumber(region.fadeOutMs)
+							? clamp(region.fadeOutMs, 0, durationMs)
 							: 0,
 					};
 				})

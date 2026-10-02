@@ -247,6 +247,8 @@
 		"volumeTitle": "오디오",
 		"volume": "볼륨",
 		"normalize": "정규화",
+		"fadeIn": "페이드 인",
+		"fadeOut": "페이드 아웃",
 		"sourceTracksTitle": "클립 소스 오디오",
 		"systemLabel": "시스템 소스",
 		"micLabel": "마이크 소스",

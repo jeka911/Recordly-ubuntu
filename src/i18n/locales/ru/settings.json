@@ -247,6 +247,8 @@
 		"volumeTitle": "Аудио",
 		"volume": "Громкость",
 		"normalize": "Нормализовать",
+		"fadeIn": "Плавное появление",
+		"fadeOut": "Плавное затухание",
 		"sourceTracksTitle": "Исходное аудио клипа",
 		"systemLabel": "Системный звук",
 		"micLabel": "Микрофон",

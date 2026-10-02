@@ -247,6 +247,8 @@
 		"volumeTitle": "Áudio",
 		"volume": "Volume",
 		"normalize": "Normalizar",
+		"fadeIn": "Entrada suave",
+		"fadeOut": "Saída suave",
 		"sourceTracksTitle": "Áudio original do clipe",
 		"systemLabel": "Sistema",
 		"micLabel": "Microfone",

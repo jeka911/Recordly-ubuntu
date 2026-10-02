@@ -247,6 +247,8 @@
 		"volumeTitle": "Audio",
 		"volume": "Lautstärke",
 		"normalize": "Normalisieren",
+		"fadeIn": "Einblenden",
+		"fadeOut": "Ausblenden",
 		"sourceTracksTitle": "Clip-Quellaudio",
 		"systemLabel": "Quellsystem",
 		"micLabel": "Quellmikrofon",

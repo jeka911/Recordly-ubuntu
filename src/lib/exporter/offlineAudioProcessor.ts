@@ -10,7 +10,7 @@ import {
 	getClipSourceStartMs,
 	getTimelineDurationMs,
 } from "@/components/video-editor/types";
-import { buildResolvedAudioPlan } from "@/lib/exporter/audioRoutingEngine";
+import { buildResolvedAudioPlan, scheduleAudioFadeGain } from "@/lib/exporter/audioRoutingEngine";
 import { estimateCompanionAudioStartDelaySeconds } from "@/lib/mediaTiming";
 import { AudioMediaProcessor } from "./audioMediaProcessor";
 import {
@@ -411,7 +411,23 @@ export class OfflineAudioProcessor extends AudioMediaProcessor {
 
 		const gainNode = ctx.createGain();
 		const normalizeGain = region.normalize ? SOURCE_AUDIO_NORMALIZE_GAIN : 1;
-		gainNode.gain.value = Math.max(0, Math.min(1, region.volume * normalizeGain));
+		// Audio regions aren't speed-remapped, so the buffer offset in seconds
+		// is also how far this chunk's slice sits into the region's own
+		// (unscaled) timeline -- the same elapsed value the fade envelope uses.
+		const regionDurationMs = outputEndMs - outputStartMs;
+		const fadeInMs = region.fadeInMs ?? 0;
+		const fadeOutMs = region.fadeOutMs ?? 0;
+		const baseGain = Math.max(0, Math.min(1, region.volume * normalizeGain));
+		scheduleAudioFadeGain(
+			gainNode.gain,
+			localStartSec,
+			bufferOffsetSec * 1000,
+			(bufferOffsetSec + duration) * 1000,
+			regionDurationMs,
+			fadeInMs,
+			fadeOutMs,
+			baseGain,
+		);
 		gainNode.connect(ctx.destination);
 
 		const source = ctx.createBufferSource();

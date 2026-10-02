@@ -564,6 +564,10 @@ export interface AudioRegion {
 	volume: number;
 	normalize?: boolean;
 	trackIndex?: number;
+	/** Linear fade-in duration in milliseconds, from the start of the clip. */
+	fadeInMs?: number;
+	/** Linear fade-out duration in milliseconds, ending at the end of the clip. */
+	fadeOutMs?: number;
 }
 
 export interface CaptionCue {
