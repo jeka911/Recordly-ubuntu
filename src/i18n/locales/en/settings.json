@@ -253,6 +253,8 @@
 		"volumeTitle": "Audio",
 		"volume": "Volume",
 		"normalize": "Normalize",
+		"fadeIn": "Fade In",
+		"fadeOut": "Fade Out",
 		"sourceTracksTitle": "Clip Source Audio",
 		"systemLabel": "Source System",
 		"micLabel": "Source Mic",

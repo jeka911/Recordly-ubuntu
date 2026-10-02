@@ -247,6 +247,8 @@
 		"volumeTitle": "Audio",
 		"volume": "Volume",
 		"normalize": "Normalizza",
+		"fadeIn": "Dissolvenza in entrata",
+		"fadeOut": "Dissolvenza in uscita",
 		"sourceTracksTitle": "Audio sorgente clip",
 		"systemLabel": "Sorgente sistema",
 		"micLabel": "Sorgente microfono",

@@ -56,6 +56,8 @@ export function useAudioRegionCommands({
 				audioPath,
 				volume: 1,
 				normalize: false,
+				fadeInMs: 0,
+				fadeOutMs: 0,
 				trackIndex,
 			};
 			setAudioRegions((current) => [...current, newRegion]);
@@ -135,6 +137,34 @@ export function useAudioRegionCommands({
 		[selectedAudioId, setAudioRegions],
 	);
 
+	const handleAudioFadeInChange = useCallback(
+		(fadeInMs: number) => {
+			if (!selectedAudioId || !Number.isFinite(fadeInMs)) return;
+			setAudioRegions((current) =>
+				current.map((region) => {
+					if (region.id !== selectedAudioId) return region;
+					const durationMs = Math.max(0, region.endMs - region.startMs);
+					return { ...region, fadeInMs: Math.max(0, Math.min(fadeInMs, durationMs)) };
+				}),
+			);
+		},
+		[selectedAudioId, setAudioRegions],
+	);
+
+	const handleAudioFadeOutChange = useCallback(
+		(fadeOutMs: number) => {
+			if (!selectedAudioId || !Number.isFinite(fadeOutMs)) return;
+			setAudioRegions((current) =>
+				current.map((region) => {
+					if (region.id !== selectedAudioId) return region;
+					const durationMs = Math.max(0, region.endMs - region.startMs);
+					return { ...region, fadeOutMs: Math.max(0, Math.min(fadeOutMs, durationMs)) };
+				}),
+			);
+		},
+		[selectedAudioId, setAudioRegions],
+	);
+
 	return {
 		handleSelectAudio,
 		handleAudioAdded,
@@ -142,5 +172,7 @@ export function useAudioRegionCommands({
 		handleAudioVolumeChange,
 		handleAudioDelete,
 		handleAudioNormalizeChange,
+		handleAudioFadeInChange,
+		handleAudioFadeOutChange,
 	};
 }

@@ -247,6 +247,8 @@
 		"volumeTitle": "音频",
 		"volume": "音量",
 		"normalize": "标准化",
+		"fadeIn": "淡入",
+		"fadeOut": "淡出",
 		"sourceTracksTitle": "剪辑源音频",
 		"systemLabel": "系统声音",
 		"micLabel": "麦克风",

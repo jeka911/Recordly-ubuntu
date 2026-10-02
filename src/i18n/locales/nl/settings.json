@@ -247,6 +247,8 @@
 		"volumeTitle": "Audio",
 		"volume": "Volume",
 		"normalize": "Normaliseren",
+		"fadeIn": "Infaden",
+		"fadeOut": "Uitfaden",
 		"sourceTracksTitle": "Bronaudio clip",
 		"systemLabel": "Systeemaudio",
 		"micLabel": "Microfoon",

@@ -17,6 +17,94 @@ export interface ResolvedAudioTrack {
 		startMs: number;
 		endMs: number;
 	};
+	/** Linear fade-in duration in milliseconds, from the start of the binding. */
+	fadeInMs: number;
+	/** Linear fade-out duration in milliseconds, ending at the end of the binding. */
+	fadeOutMs: number;
+}
+
+/**
+ * Gain multiplier (0-1) for a linear fade-in/fade-out envelope at a given
+ * offset into a track's timeline binding. Shared by the live preview
+ * (continuous per-frame volume) and the offline exporter (scheduled gain
+ * ramps per rendered chunk) so both apply the exact same fade curve.
+ */
+export function computeAudioFadeMultiplier(
+	elapsedMs: number,
+	durationMs: number,
+	fadeInMs: number,
+	fadeOutMs: number,
+): number {
+	if (!Number.isFinite(durationMs) || durationMs <= 0) {
+		return 1;
+	}
+
+	const clampedFadeIn = Math.max(0, Math.min(fadeInMs, durationMs));
+	const clampedFadeOut = Math.max(0, Math.min(fadeOutMs, durationMs));
+
+	let multiplier = 1;
+	if (clampedFadeIn > 0 && elapsedMs < clampedFadeIn) {
+		multiplier = Math.min(multiplier, Math.max(0, elapsedMs) / clampedFadeIn);
+	}
+
+	const fadeOutStartMs = durationMs - clampedFadeOut;
+	if (clampedFadeOut > 0 && elapsedMs > fadeOutStartMs) {
+		const remainingMs = durationMs - elapsedMs;
+		multiplier = Math.min(multiplier, Math.max(0, remainingMs) / clampedFadeOut);
+	}
+
+	return Math.max(0, Math.min(1, multiplier));
+}
+
+/**
+ * Minimal subset of AudioParam used by scheduleAudioFadeGain, so it can be
+ * driven by a real AudioParam or a lightweight test double.
+ */
+export interface SchedulableGainParam {
+	setValueAtTime(value: number, startTime: number): unknown;
+	linearRampToValueAtTime(value: number, endTime: number): unknown;
+}
+
+/**
+ * Schedules a gain AudioParam so a (possibly chunked) slice of a track's
+ * fade envelope plays back correctly. A chunk slice can span the *entire*
+ * fade-in, a flat plateau, and the *entire* fade-out at once (e.g. a short
+ * clip rendered in a single chunk) -- a naive two-point ramp from the gain
+ * at the slice's start straight to the gain at its end would flatten that
+ * into one straight line, which is silent start-to-end whenever both
+ * endpoints happen to be 0. Scheduling every envelope "knee" that falls
+ * inside the slice (where the fade-in ends and/or the fade-out begins)
+ * reconstructs the actual piecewise-linear curve instead.
+ */
+export function scheduleAudioFadeGain(
+	gainParam: SchedulableGainParam,
+	chunkTimeOffsetSec: number,
+	elapsedStartMs: number,
+	elapsedEndMs: number,
+	durationMs: number,
+	fadeInMs: number,
+	fadeOutMs: number,
+	baseGain: number,
+): void {
+	const breakpointsMs = new Set<number>([elapsedStartMs, elapsedEndMs]);
+	if (fadeInMs > elapsedStartMs && fadeInMs < elapsedEndMs) {
+		breakpointsMs.add(fadeInMs);
+	}
+	const fadeOutStartMs = durationMs - fadeOutMs;
+	if (fadeOutStartMs > elapsedStartMs && fadeOutStartMs < elapsedEndMs) {
+		breakpointsMs.add(fadeOutStartMs);
+	}
+
+	const sortedMs = Array.from(breakpointsMs).sort((a, b) => a - b);
+	sortedMs.forEach((ms, index) => {
+		const timeSec = chunkTimeOffsetSec + (ms - elapsedStartMs) / 1000;
+		const gain = baseGain * computeAudioFadeMultiplier(ms, durationMs, fadeInMs, fadeOutMs);
+		if (index === 0) {
+			gainParam.setValueAtTime(gain, timeSec);
+		} else {
+			gainParam.linearRampToValueAtTime(gain, timeSec);
+		}
+	});
 }
 
 export interface ResolvedAudioPlan {
@@ -84,6 +172,8 @@ export function buildResolvedAudioPlan(input: {
 			startMs: Math.max(0, region.startMs),
 			endMs: Math.max(0, region.endMs),
 		},
+		fadeInMs: Math.max(0, region.fadeInMs ?? 0),
+		fadeOutMs: Math.max(0, region.fadeOutMs ?? 0),
 	}));
 
 	for (const audioPath of playbackPaths) {
@@ -100,6 +190,8 @@ export function buildResolvedAudioPlan(input: {
 				startMs: 0,
 				endMs: Number.POSITIVE_INFINITY,
 			},
+			fadeInMs: 0,
+			fadeOutMs: 0,
 		});
 	}
 
@@ -116,6 +208,8 @@ export function buildResolvedAudioPlan(input: {
 				startMs: 0,
 				endMs: Number.POSITIVE_INFINITY,
 			},
+			fadeInMs: 0,
+			fadeOutMs: 0,
 		});
 	}
 

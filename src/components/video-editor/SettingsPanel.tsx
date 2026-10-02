@@ -441,8 +441,13 @@ interface SettingsPanelProps {
 	selectedAudioId?: string | null;
 	selectedAudioVolume?: number | null;
 	selectedAudioNormalize?: boolean | null;
+	selectedAudioFadeInMs?: number | null;
+	selectedAudioFadeOutMs?: number | null;
+	selectedAudioDurationMs?: number | null;
 	onAudioVolumeChange?: (volume: number) => void;
 	onAudioNormalizeChange?: (normalize: boolean) => void;
+	onAudioFadeInChange?: (fadeInMs: number) => void;
+	onAudioFadeOutChange?: (fadeOutMs: number) => void;
 	onAudioDelete?: (id: string) => void;
 	shadowIntensity?: number;
 	onShadowChange?: (intensity: number) => void;
@@ -897,8 +902,13 @@ export function SettingsPanel({
 	selectedAudioId,
 	selectedAudioVolume,
 	selectedAudioNormalize,
+	selectedAudioFadeInMs,
+	selectedAudioFadeOutMs,
+	selectedAudioDurationMs,
 	onAudioVolumeChange,
 	onAudioNormalizeChange,
+	onAudioFadeInChange,
+	onAudioFadeOutChange,
 	onAudioDelete,
 	shadowIntensity = 0.67,
 	onShadowChange,
@@ -2648,6 +2658,11 @@ export function SettingsPanel({
 			</section>
 		);
 
+		const audioFadeMaxSec =
+			selectedAudioDurationMs && selectedAudioDurationMs > 0
+				? selectedAudioDurationMs / 1000
+				: 10;
+
 		const audioSectionContent = (
 			<section className="flex flex-col gap-3">
 				<div className="flex items-center justify-between gap-3">
@@ -2660,6 +2675,8 @@ export function SettingsPanel({
 						onClick={() => {
 							onAudioVolumeChange?.(1);
 							onAudioNormalizeChange?.(false);
+							onAudioFadeInChange?.(0);
+							onAudioFadeOutChange?.(0);
 						}}
 					>
 						{t("common.actions.reset", "Reset")}
@@ -2684,6 +2701,24 @@ export function SettingsPanel({
 						onCheckedChange={(v) => onAudioNormalizeChange?.(v)}
 					/>
 				</div>
+				<SliderControl
+					label={tSettings("audio.fadeIn", "Fade In")}
+					value={(selectedAudioFadeInMs ?? 0) / 1000}
+					min={0}
+					max={audioFadeMaxSec}
+					step={0.1}
+					onChange={(v) => onAudioFadeInChange?.(v * 1000)}
+					formatValue={(v) => `${v.toFixed(1)}s`}
+				/>
+				<SliderControl
+					label={tSettings("audio.fadeOut", "Fade Out")}
+					value={(selectedAudioFadeOutMs ?? 0) / 1000}
+					min={0}
+					max={audioFadeMaxSec}
+					step={0.1}
+					onChange={(v) => onAudioFadeOutChange?.(v * 1000)}
+					formatValue={(v) => `${v.toFixed(1)}s`}
+				/>
 			</section>
 		);
 

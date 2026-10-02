@@ -102,8 +102,15 @@ export function useEditorSettingsPanelProps(input: Input): ComponentProps<typeof
 		selectedAudioVolume: selectedAudio?.volume ?? null,
 		selectedAudioNormalize:
 			selectedAudio?.normalize ?? (timeline.selectedAudioId ? false : null),
+		selectedAudioFadeInMs: selectedAudio?.fadeInMs ?? (timeline.selectedAudioId ? 0 : null),
+		selectedAudioFadeOutMs: selectedAudio?.fadeOutMs ?? (timeline.selectedAudioId ? 0 : null),
+		selectedAudioDurationMs: selectedAudio
+			? Math.max(0, selectedAudio.endMs - selectedAudio.startMs)
+			: null,
 		onAudioVolumeChange: audioCommands.handleAudioVolumeChange,
 		onAudioNormalizeChange: audioCommands.handleAudioNormalizeChange,
+		onAudioFadeInChange: audioCommands.handleAudioFadeInChange,
+		onAudioFadeOutChange: audioCommands.handleAudioFadeOutChange,
 		onAudioDelete: audioCommands.handleAudioDelete,
 		shadowIntensity: appearance.shadowIntensity,
 		onShadowChange: appearance.setShadowIntensity,
