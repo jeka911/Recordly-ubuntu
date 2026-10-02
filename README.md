@@ -1,3 +1,14 @@
+> **Fork notice:** This is a fork of the original [Recordly](https://github.com/webadderallorg/Recordly) by [webadderall](https://github.com/webadderallorg) — huge thanks to the original author and contributors for building and open-sourcing it. This fork is focused on improving and optimizing the Linux/X11 experience on Ubuntu (recording, export, and HUD controls that didn't work correctly out of the box on X11).
+>
+> **What's changed from upstream:**
+> - Fixed recording on X11 — it was defaulting to the Wayland portal capture path, which silently failed with no picker dialog.
+> - Fixed an export crash caused by a Linux-only GPU backend flag that newer Chromium builds reject; removed the forced flag and let Chromium pick its own working backend.
+> - Fixed WebGPU export crashes by automatically retrying with the WebGL backend when WebGPU rendering fails mid-export.
+> - Fixed the HUD minimize button on Linux, which silently did nothing (`.minimize()` is ignored by X11 for this window type) — switched to hiding the window instead.
+> - Added a system-wide `Ctrl+Space` shortcut to stop recording without needing the tray icon, with a hint shown in the countdown dialog.
+> - Added Fade In / Fade Out controls for imported audio clips, with matching behavior in live preview and export.
+> - Bumped `astro`, `js-yaml`, and `builder-util-runtime` to patch known vulnerabilities.
+
 Language: EN | [简中](README.zh-CN.md)
 
 <p align="center">
