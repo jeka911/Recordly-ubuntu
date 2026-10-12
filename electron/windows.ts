@@ -329,9 +329,10 @@ function setHudOverlayMousePassthrough(ignore: boolean) {
 	}
 
 	if (!isHudOverlayMousePassthroughSupported()) {
-		if (process.platform !== "linux") {
-			setHudOverlayFallbackExpanded(!ignore);
-		}
+		// Window expansion for menus/popovers is driven explicitly by
+		// hud-overlay-set-popover-open, not by generic hover state here --
+		// expanding on every hover (rather than only while a menu is open)
+		// made the window visibly grow/shrink as the mouse crossed the HUD.
 		hudOverlayWindow.setIgnoreMouseEvents(false);
 		return;
 	}
@@ -346,6 +347,14 @@ function setHudOverlayMousePassthrough(ignore: boolean) {
 
 ipcMain.on("hud-overlay-set-ignore-mouse", (_event, ignore: boolean) => {
 	setHudOverlayMousePassthrough(Boolean(ignore));
+});
+
+// On platforms without mouse-passthrough support (Linux), the HUD window is
+// sized just tall enough for the toolbar. Popovers render inside that same
+// window (no portal), so they'd overlap the toolbar unless we grow the
+// window while a popover/menu is actually open.
+ipcMain.on("hud-overlay-set-popover-open", (_event, open: boolean) => {
+	setHudOverlayFallbackExpanded(Boolean(open));
 });
 
 ipcMain.on("hud-overlay-set-source-selection-active", (_event, active: boolean) => {

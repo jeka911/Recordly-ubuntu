@@ -15,6 +15,11 @@ export function useLaunchHudInteractionState({
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	useEffect(() => {
+		// On platforms without mouse-passthrough support (Linux), popovers
+		// render inside the HUD window's own bounds (no portal) -- grow the
+		// window while a menu is open so it doesn't overlap the toolbar.
+		window.electronAPI?.hudOverlaySetPopoverOpen?.(openId !== null);
+
 		if (openId !== null) {
 			if (timeoutRef.current) clearTimeout(timeoutRef.current);
 			window.electronAPI?.hudOverlaySetIgnoreMouse?.(false);
